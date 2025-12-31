@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book API Dashboard</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            padding-top: 40px;
+        }
+
+        .container {
+            width: 85%;
+            max-width: 1100px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 32px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 22px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 22px;
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+
+        h3 {
+            margin-top: 0;
+            border-left: 4px solid #4a90e2;
+            padding-left: 8px;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            margin-top: 16px;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #log {
+            background: #1e1e1e;
+            color: #dcdcdc;
+            padding: 14px;
+            border-radius: 10px;
+            height: 240px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>Book API Dashboard</h1>
+
+    <div class="grid">
+
+        <!-- GET -->
+        <div class="card">
+            <h3>Fetch All Books</h3>
+            <button id="btn-get">Get Books</button>
+            <div id="list-area"></div>
+        </div>
+
+        <!-- POST -->
+        <div class="card">
+            <h3>Add New Book</h3>
+
+            <label>Title</label>
+            <input id="add-title">
+
+            <label>Author</label>
+            <input id="add-author">
+
+            <button id="btn-add">Add Book</button>
+            <div id="add-result"></div>
+        </div>
+
+        <!-- PUT -->
+        <div class="card">
+            <h3>Update Book</h3>
+
+            <label>Book ID</label>
+            <input id="upd-id" type="number">
+
+            <label>New Title</label>
+            <input id="upd-title">
+
+            <label>New Author</label>
+            <input id="upd-author">
+
+            <button id="btn-upd">Update Book</button>
+            <div id="upd-result"></div>
+        </div>
+
+        <!-- DELETE -->
+        <div class="card">
+            <h3>Delete Book</h3>
+
+            <label>Book ID</label>
+            <input id="del-id" type="number">
+
+            <button id="btn-del">Delete Book</button>
+            <div id="del-result"></div>
+        </div>
+
+        <!-- LOG -->
+        <div class="card full">
+            <h3>Response Log</h3>
+            <pre id="log"></pre>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const baseUrl = "http://localhost:8090/books";
+    const logEl = document.getElementById("log");
+
+    function log(msg, data) {
+        const time = new Date().toLocaleTimeString();
+        logEl.textContent =
+            `${time} | ${msg} ${data ? JSON.stringify(data,null,2) : ""}\n\n`
+            + logEl.textContent;
+    }
+
+    // GET
+    async function getAll() {
+        const res = await fetch(baseUrl);
+        const json = await res.json();
+        renderList(json);
+        log("GET /books", json);
+    }
+
+    function renderList(books) {
+        const area = document.getElementById("list-area");
+        if (!books.length) {
+            area.innerHTML = "<em>No books found</em>";
+            return;
+        }
+        let html = "<ul>";
+        books.forEach(b => {
+            html += `<li><strong>${b.id}</strong> — ${b.title} by ${b.author}</li>`;
+        });
+        html += "</ul>";
+        area.innerHTML = html;
+    }
+
+    // POST
+    async function addBook() {
+        const body = {
+            title: document.getElementById("add-title").value,
+            author: document.getElementById("add-author").value
+        };
+
+        const res = await fetch(baseUrl, {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(body)
+        });
+
+        document.getElementById("add-result").textContent = await res.text();
+        log("POST /books", body);
+        getAll();
+    }
+
+    // PUT
+    async function updateBook() {
+        const id = document.getElementById("upd-id").value;
+
+        const body = {
+            title: document.getElementById("upd-title").value,
+            author: document.getElementById("upd-author").value
+        };
+
+        const res = await fetch(`${baseUrl}/${id}`, {
+            method: "PUT",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify(body)
+        });
+
+        document.getElementById("upd-result").textContent = await res.text();
+        log("PUT /books/" + id, body);
+        getAll();
+    }
+
+    // DELETE
+    async function deleteBook() {
+        const id = document.getElementById("del-id").value;
+
+        const res = await fetch(`${baseUrl}/${id}`, { method: "DELETE" });
+        document.getElementById("del-result").textContent = await res.text();
+        log("DELETE /books/" + id);
+        getAll();
+    }
+
+    btn-get.onclick = getAll;
+    btn-add.onclick = addBook;
+    btn-upd.onclick = updateBook;
+    btn-del.onclick = deleteBook;
+
+    getAll();
+</script>
+</body>
+</html>
